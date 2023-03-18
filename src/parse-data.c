@@ -1,3 +1,12 @@
+/**
+ * File: parse-data
+ *
+ * Determine the Top 30 signals with the highest CC value.
+ *
+ * arg 1: input file path
+ * arg 2: output file path
+ */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -5,7 +14,7 @@
 #include <string.h>
 #include <math.h>
 
-#define NUM_OF_GATES 30
+#define NUM_OF_SIGNALS 30
 
 #define BUFFER_SIZE 1024
 #define FIELD_SIZE 128
@@ -21,14 +30,14 @@ typedef struct {
     uint32_t cc;
     uint32_t cc0;
     uint32_t cc1;
-} gate_t;
+} signal_t;
 
 int main(int argc, char* argv[]) {
 
     char buffer[BUFFER_SIZE];
 
-    gate_t gate[NUM_OF_GATES];
-    uint32_t gate_len = 0;
+    signal_t signal[NUM_OF_SIGNALS];
+    uint32_t signal_len = 0;
 
     char* input_path = NULL;
     char* output_path = NULL;
@@ -67,7 +76,7 @@ int main(int argc, char* argv[]) {
         char pin_type;
         char testability[FIELD_SIZE];
         char s_testability[FIELD_SIZE];
-        char gate_name[FIELD_SIZE];
+        char signal_name[FIELD_SIZE];
         char cc0_str[4];
         char cc1_str[4];
 
@@ -83,7 +92,7 @@ int main(int argc, char* argv[]) {
         }
 
         // parse line of input file
-        fields_set = sscanf(buffer, "%s %c %s %s %s", pin_name, &pin_type, testability, s_testability, gate_name);
+        fields_set = sscanf(buffer, "%s %c %s %s %s", pin_name, &pin_type, testability, s_testability, signal_name);
         if (NUM_OF_FIELDS != fields_set) {
             continue;
         }
@@ -98,10 +107,10 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        // check for duplicate gate
+        // check for duplicate signal
         uint32_t duplicate = 0;
-        for (int i = 0; gate_len > i; i++) {
-            if (0 == strncmp(gate_name, gate[i].name, strlen(gate_name))) {
+        for (int i = 0; signal_len > i; i++) {
+            if (0 == strncmp(signal_name, signal[i].name, strlen(signal_name))) {
                 duplicate = 1;
                 break;
             }
@@ -156,8 +165,8 @@ int main(int argc, char* argv[]) {
 
         // check if signal is in the top 30
         int rank = -1;
-        for (int i = 0; gate_len > i; i++) {
-            if (cc > gate[i].cc) {
+        for (int i = 0; signal_len > i; i++) {
+            if (cc > signal[i].cc) {
                 rank = i;
                 break;
             }
@@ -165,33 +174,33 @@ int main(int argc, char* argv[]) {
 
         // not in the top 30 or last
         if (-1 == rank) {
-            if (NUM_OF_GATES > gate_len) {
-                strcpy(gate[gate_len].name, gate_name);
-                gate[gate_len].cc0 = cc0;
-                gate[gate_len].cc1 = cc1;
-                gate[gate_len].cc = cc;
-                rank = gate_len;
-                gate_len++;
+            if (NUM_OF_SIGNALS > signal_len) {
+                strcpy(signal[signal_len].name, signal_name);
+                signal[signal_len].cc0 = cc0;
+                signal[signal_len].cc1 = cc1;
+                signal[signal_len].cc = cc;
+                rank = signal_len;
+                signal_len++;
             }
             continue;
         }
 
-        // shift gates for new ranking
-        for (int i = gate_len - 1; i > rank; i--) {
-            strcpy(gate[i].name, gate[i - 1].name);
-            gate[i].cc0 = gate[i - 1].cc0;
-            gate[i].cc1 = gate[i - 1].cc1;
-            gate[i].cc = gate[i - 1].cc;
+        // shift signals for new ranking
+        for (int i = signal_len - 1; i > rank; i--) {
+            strcpy(signal[i].name, signal[i - 1].name);
+            signal[i].cc0 = signal[i - 1].cc0;
+            signal[i].cc1 = signal[i - 1].cc1;
+            signal[i].cc = signal[i - 1].cc;
         }
-        strcpy(gate[rank].name, gate_name);
-        gate[rank].cc0 = cc0;
-        gate[rank].cc1 = cc1;
-        gate[rank].cc = cc;
+        strcpy(signal[rank].name, signal_name);
+        signal[rank].cc0 = cc0;
+        signal[rank].cc1 = cc1;
+        signal[rank].cc = cc;
     }
 
-    // print the top 30 gates to the output file
-    for (int i = 0; i < gate_len; i++) {
-        fprintf(output_file, "rank %d: gate=\'%s\' CC0=%d CC1=%d CC=%d\n", i + 1, gate[i].name, gate[i].cc0, gate[i].cc1, gate[i].cc);
+    // print the top 30 signals to the output file
+    for (int i = 0; i < signal_len; i++) {
+        fprintf(output_file, "rank %d: signal=\'%s\' CC0=%d CC1=%d CC=%d\n", i + 1, signal[i].name, signal[i].cc0, signal[i].cc1, signal[i].cc);
     }
 
     // cleanup
